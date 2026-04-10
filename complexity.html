@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Complexity Visualizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            margin: 20px; 
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .controls { 
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px; 
+            padding: 15px; 
+            background: #f0f4f8; 
+            border-radius: 8px; 
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        canvas { 
+            width: 100% !important; 
+            height: 600px !important; 
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Growth Rates: Asymptotic Analysis</h2>
+    <div class="controls">
+        <div class="control-group">
+            <label for="nMax"><strong>Max Input Size (N): <span id="nValue">20</span></strong></label>
+            <input type="range" id="nMax" min="5" max="100" value="20" style="width: 250px;">
+        </div>
+        
+        <div class="control-group">
+            <label for="yScale"><strong>Y-Axis Scale:</strong></label>
+            <select id="yScale" style="padding: 5px; border-radius: 4px;">
+                <option value="linear">Linear (Shows extreme growth)</option>
+                <option value="logarithmic">Logarithmic (Easier to compare all lines)</option>
+            </select>
+        </div>
+    </div>
+
+    <div>
+        <canvas id="complexityChart"></canvas>
+    </div>
+</div>
+
+<script>
+    const ctx = document.getElementById('complexityChart').getContext('2d');
+    let chart;
+
+    // Function to calculate the mathematical data points
+    function generateData(maxN) {
+        const labels = [];
+        const data1 = [];
+        const dataLogN = [];
+        const dataN = [];
+        const dataNLogN = [];
+        const dataNSq = [];
+        const dataNCb = [];
+        const data2N = [];
+
+        for (let n = 1; n <= maxN; n++) {
+            labels.push(n);
+            data1.push(1);
+            
+            // Handle log(1) which is 0. Using Math.max to prevent log(0) issues if we ever start at 0
+            let logVal = Math.log2(n);
+            dataLogN.push(logVal);
+            
+            dataN.push(n);
+            dataNLogN.push(n * logVal);
+            dataNSq.push(Math.pow(n, 2));
+            dataNCb.push(Math.pow(n, 3));
+            data2N.push(Math.pow(2, n));
+        }
+
+        return { labels, data1, dataLogN, dataN, dataNLogN, dataNSq, dataNCb, data2N };
+    }
+
+    // Function to render and update the chart
+    function updateChart() {
+        const maxN = parseInt(document.getElementById('nMax').value);
+        document.getElementById('nValue').innerText = maxN;
+        const yScale = document.getElementById('yScale').value;
+        const data = generateData(maxN);
+
+        // Destroy the old chart instance before drawing a new one to prevent memory leaks/glitches
+        if (chart) {
+            chart.destroy();
+        }
+
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [
+                    { label: 'O(1)', data: data.data1, borderColor: '#36a2eb', fill: false, tension: 0.3 },
+                    { label: 'O(log n)', data: data.dataLogN, borderColor: '#4bc0c0', fill: false, tension: 0.3 },
+                    { label: 'O(n)', data: data.dataN, borderColor: '#ffcd56', fill: false, tension: 0.3 },
+                    // Thicker borders for the n log n vs n^2 comparison
+                    { label: 'O(n log n)', data: data.dataNLogN, borderColor: '#ff9f40', fill: false, tension: 0.3, borderWidth: 3 },
+                    { label: 'O(n²)', data: data.dataNSq, borderColor: '#ff6384', fill: false, tension: 0.3, borderWidth: 3 },
+                    { label: 'O(n³)', data: data.dataNCb, borderColor: '#9966ff', fill: false, tension: 0.3 },
+                    { label: 'O(2ⁿ)', data: data.data2N, borderColor: '#c9cbcf', fill: false, tension: 0.3 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        type: yScale,
+                        title: { display: true, text: 'Operations / Time', font: { weight: 'bold' } }
+                    },
+                    x: {
+                        title: { display: true, text: 'Input Size (n)', font: { weight: 'bold' } }
+                    }
+                },
+                plugins: {
+                    tooltip: { mode: 'index', intersect: false },
+                    legend: { position: 'right' }
+                },
+                elements: {
+                    point: { radius: 0, hitRadius: 10, hoverRadius: 5 } // Hide dots for a cleaner curve, but keep hoverable
+                }
+            }
+        });
+    }
+
+    // Attach event listeners to the controls
+    document.getElementById('nMax').addEventListener('input', updateChart);
+    document.getElementById('yScale').addEventListener('change', updateChart);
+
+    // Initial render when the page loads
+    updateChart();
+</script>
+</body>
+</html>
